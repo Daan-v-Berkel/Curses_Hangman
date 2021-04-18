@@ -1,14 +1,21 @@
 import curses
+import json
 
+'''
+Initializing menus and others
+'''
 main_menu = ['Play', 'Scoreboard', 'Settings', 'Exit']
 settings_menu = {'difficulty': ['easy', 'medium', 'hard'], 'screen flashing': ['ON', 'OFF'], 'word subjects': ['Animals', 'Foods', 'Brands']}
 
 settings = {
     'difficulty': 1,
-    'screen flashing': 0,
-    'word subjects': 0
+    'screen flashing': 1,
+    'word subjects': 1
     }
 
+'''
+name says it, prints the main menu to the screen. index is udes to highlight selected lines
+'''
 def print_main_menu(screen, main_menu_idx):
 
     screen.clear()
@@ -31,6 +38,10 @@ def print_main_menu(screen, main_menu_idx):
     
     screen.refresh()
 
+'''
+name says it, prints the sttings menu to the screen.
+this also handles setting a selected option to the option of choice.
+'''
 def print_settings_menu(screen, settings_menu_idx, selected=False):
 
     screen.clear()
@@ -46,6 +57,8 @@ def print_settings_menu(screen, settings_menu_idx, selected=False):
     x_pos = x//2 - len(title_string2)//2
     screen.addstr(y_pos, x_pos, title_string2)
     
+    # handles the menu when no option is selected (browsing trough)
+
     if not selected:
         for key, value in settings_menu.items():
             key_to_print = key + ":"
@@ -67,6 +80,8 @@ def print_settings_menu(screen, settings_menu_idx, selected=False):
             else:
                 screen.addstr(y_pos, x_pos, key_to_print + ' ' +  value_to_print)
     
+    # handles the menu when an option is selected to change it.
+
     else:
         current_setting = settings[list(settings_menu.keys())[settings_menu_idx]]
 
@@ -96,15 +111,13 @@ def print_settings_menu(screen, settings_menu_idx, selected=False):
                     else:
                         end += value[i] + ' | '
 
-            
-
             if idx == settings_menu_idx:
                 screen.addstr(y_pos,x_pos-4, '--> ' + start)
                 screen.attron(curses.color_pair(1))
                 screen.addstr(y_pos, x_pos + len(start), highlighted)
                 screen.attroff(curses.color_pair(1))
                 if end == '':
-                    screen.addstr(y_pos, x_pos+len(start + highlighted), '' + end + ' <--')
+                    screen.addstr(y_pos, x_pos+len(start + highlighted), ' <--')
                 else:
                     screen.addstr(y_pos, x_pos+len(start + highlighted), ' | ' + end + ' <--')
 
@@ -113,26 +126,37 @@ def print_settings_menu(screen, settings_menu_idx, selected=False):
     
     screen.refresh()
 
-def sure(screen):
+'''
+A promt to ask the user if they are sure, made into its own function for reusability
+returns a simple "y" or "n".
+'''
+def sure(screen, prompt):
     screen.clear()
     
     y, x = screen.getmaxyx()
-    option = 'Are you sure you wish to Exit? [Y/N]'
+    # option = 'Are you sure you wish to Exit? [Y/N]'
 
     y_pos = y//2
-    x_pos = x//2 - len(option)//2
+    x_pos = x//2 - len(prompt)//2
 
-    screen.addstr(y_pos, x_pos, option)
+    screen.addstr(y_pos, x_pos, prompt)
     screen.refresh()
     while True:
         choice = chr(screen.getch())
         if choice in ['y', 'Y','n', 'N']:
             return choice.lower()
-        
 
+def write_settings():
+    pass
+
+'''
+main function to be used in the curses wrapper
+'''
 def main(screen):
     curses.curs_set(0)
     curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_WHITE)
+
+    
 
     main_menu_idx = 0
     main_menu_active = True
@@ -147,31 +171,29 @@ def main(screen):
             main_menu_idx -= 1
             if main_menu_idx == -1:
                 main_menu_idx = len(main_menu)-1
-            #print_main_menu(screen, main_menu_idx)
         elif key == curses.KEY_DOWN:
             main_menu_idx += 1
             if main_menu_idx == len(main_menu):
                 main_menu_idx = 0
-            #print_main_menu(screen, main_menu_idx)
         elif key == curses.KEY_ENTER or key in [10, 13]:
             if main_menu[main_menu_idx] == 'Exit':
-                if choice := sure(screen) == 'y':
+                if choice := sure(screen, 'Are you sure you wish to Exit? [Y/N]') == 'y':
                     break
             if main_menu[main_menu_idx] == 'Settings':
                 main_menu_active = False
                 settings_menu_active = True
-                
+# check what menu is activated and go to that loop     
         if main_menu_active:    
             print_main_menu(screen, main_menu_idx)
         if settings_menu_active:
             print_settings_menu(screen, settings_menu_idx)
-            current_option = settings[list(settings_menu.keys())[settings_menu_idx]]
-            while True:
+            while settings_menu_active:
                 key = screen.getch()
                 if chr(key) in ['q', 'Q']:
+                    # go back to main and save settings to file
                     settings_menu_active = False
                     main_menu_active = True
-                    break
+                    #break
                 if key == curses.KEY_UP:
                     settings_menu_idx -= 1
                     if settings_menu_idx == -1:
@@ -183,6 +205,7 @@ def main(screen):
                 elif key == curses.KEY_ENTER or key in [10, 13]:
                     selected = True
                     print_settings_menu(screen, settings_menu_idx, selected)
+                    current_option = settings[list(settings_menu.keys())[settings_menu_idx]]
                     while selected:
                         key = screen. getch()
                         if key == curses.KEY_ENTER or key in [10, 13]:
@@ -194,14 +217,15 @@ def main(screen):
                                 current_option = len(settings_menu[list(settings_menu.keys())[settings_menu_idx]])-1
                             if current_option > len(settings_menu[list(settings_menu.keys())[settings_menu_idx]])-1:
                                 current_option = 0
-                                settings[list(settings_menu.keys())[settings_menu_idx]] = current_option
+                            settings[list(settings_menu.keys())[settings_menu_idx]] = current_option
                         elif key == curses.KEY_RIGHT:
                             current_option += 1
                             if current_option < 0:
                                 current_option = len(settings_menu[list(settings_menu.keys())[settings_menu_idx]])-1
                             if current_option > len(settings_menu[list(settings_menu.keys())[settings_menu_idx]])-1:
                                 current_option = 0
-                                settings[list(settings_menu.keys())[settings_menu_idx]] = current_option
+                            settings[list(settings_menu.keys())[settings_menu_idx]] = current_option
+                        #print(settings[list(settings_menu.keys())[settings_menu_idx]])        
                         print_settings_menu(screen, settings_menu_idx, selected)
                 print_settings_menu(screen, settings_menu_idx, selected)
 
