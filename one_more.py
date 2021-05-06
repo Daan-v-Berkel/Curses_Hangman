@@ -1,13 +1,13 @@
 import curses
 import json
-from curses import textpad
 import string
 import random
+import os
 
 '''
 Initializing menus and others
 '''
-main_menu = ['Play', 'High Scores', 'Settings', 'Exit']
+main_menu = ['Play', 'Highscores', 'Settings', 'How to play', 'Exit']
 settings_menu = {'difficulty': ['easy', 'medium', 'hard'], 'screen flashing': ['ON', 'OFF'], 'word subjects': ['Animals', 'Foods', 'Brands']}
 words = {'Animals':['horse', 'hippopotamus', 'crocodile'], 'Foods':['pancakes', 'lasagna', 'pizza', 'cake'], 'Brands':['peugeot', 'mercedes', 'kelloggs', 'apple']}
 
@@ -26,13 +26,59 @@ high_scores = {
     6:  ['dirk', 5],
     7:  ['greetje', 4],
     8:  ['mark', 3],
-    9:  ['fleichmeister', 2],
+    9:  ['fleischmeister', 2],
     10: ['computer-3', 1],
 }
 
 '''
-name says it, prints the main menu to the screen. index is udes to highlight selected lines
+name says it, prints the main menu to the screen. index is used to highlight selected lines
 '''
+
+def print_title_screen(screen, title='hangman'):
+
+    y, x = screen.getmaxyx()
+    title_length = 0
+    for char in title:
+        if char == ' ':
+            title_length += 2
+        elif char == 'i':
+            title_length += 3
+        else: title_length += 6
+    title_length -= 1
+
+    win = curses.newwin(7, title_length + 4, 1, x//2 - title_length//2)
+    win.border()
+
+    if title == 'hangman':
+        win.addstr(1, 2, '#   #  ###  #   #  ###  #   #  ###  #   #')
+        win.addstr(2, 2, '#   # #   # ##  # #   # ## ## #   # ##  #')
+        win.addstr(3, 2, '##### ##### # # # #     # # # ##### # # #')
+        win.addstr(4, 2, '#   # #   # #  ## #  ## #   # #   # #  ##')
+        win.addstr(5, 2, '#   # #   # #   #  #### #   # #   # #   #')
+
+    if title == 'settings':
+        win.addstr(1, 2, ' #### ##### ##### ##### ## #   #  ###   ####')
+        win.addstr(2, 2, '#     #       #     #      ##  # #   # #    ')
+        win.addstr(3, 2, ' ###  ####    #     #   ## # # # #      ### ')
+        win.addstr(4, 2, '    # #       #     #   ## #  ## #  ##     #')
+        win.addstr(5, 2, '####  #####   #     #   ## #   #  #### #### ')
+
+    if title == 'highscores':
+        win.addstr(1, 2, '#   # ##  ###  #   #  ####  ###   ###  ####  #####  ####')
+        win.addstr(2, 2, '#   #    #   # #   # #     #   # #   # #   # #     #    ')
+        win.addstr(3, 2, '##### ## #     #####  ###  #     #   # # ##  ####   ### ')
+        win.addstr(4, 2, '#   # ## #  ## #   #     # #   # #   # #   # #         #')
+        win.addstr(5, 2, '#   # ##  ###  #   # ####   ###   ###  #   # ##### #### ')
+
+    if title == 'how to play':
+        win.addstr(1, 2, '#   #  ###  #     #  #####  ###   ####  #      ###  #   #')
+        win.addstr(2, 2, '#   # #   # #     #    #   #   #  #   # #     #   #  # # ')
+        win.addstr(3, 2, '##### #   # #  #  #    #   #   #  ####  #     #####   #  ')
+        win.addstr(4, 2, '#   # #   # # # # #    #   #   #  #     #     #   #   #  ')
+        win.addstr(5, 2, '#   #  ###   #   #     #    ###   #     ##### #   #   #  ')
+
+    return win
+
 def print_main_menu(screen, main_menu_idx):
 
     screen.clear()
@@ -40,18 +86,7 @@ def print_main_menu(screen, main_menu_idx):
     y, x = screen.getmaxyx()
     y += 5
 
-    x_main = x//2 - len('#   #  ###  #   #  ###  #   #  ###  #   #')//2
-
-    win = curses.newwin(7, len('#   #  ###  #   #  ###  #   #  ###  #   #')+4, 1, x_main)
-    win.border()
-
-    win.attron(curses.color_pair(2))
-    win.addstr(1, 2, '#   #  ###  #   #  ###  #   #  ###  #   #')
-    win.addstr(2, 2, '#   # #   # ##  # #   # ## ## #   # ##  #')
-    win.addstr(3, 2, '##### ##### # # # #     # # # ##### # # #')
-    win.addstr(4, 2, '#   # #   # #  ## #  ## #   # #   # #  ##')
-    win.addstr(5, 2, '#   # #   # #   #  #### #   # #   # #   #')
-    win.attroff(curses.color_pair(2))
+    title = print_title_screen(screen, 'hangman')
     
     for idx, word in enumerate(main_menu):
         y_pos = y//2 - len(main_menu)//2 + idx
@@ -67,47 +102,34 @@ def print_main_menu(screen, main_menu_idx):
             screen.addstr(y_pos, x_pos, word)
     
     screen.refresh()
-    win.refresh()
+    title.refresh()
 
 '''
-name says it, prints the sttings menu to the screen.
+name says it, prints the settings menu to the screen.
 this also handles setting a selected option to the option of choice.
 '''
 def print_settings_menu(screen, settings_menu_idx, settings_file=None, selected=False):
-    #if not settings file is found on the system, it uses standard settings.
-    if not settings_file:
-        settings_file = settings
-
     screen.clear()
     
     y, x = screen.getmaxyx()
     y +=5
 
-    x_main = x//2 - len(' #### ##### ##### ##### ## #   #  ###   ####')//2
-
-    win = curses.newwin(7, len(' #### ##### ##### ##### ## #   #  ###   ####')+4, 1, x_main)
-    win.border()
-
-    win.attron(curses.color_pair(2))
-    win.addstr(1, 2, ' #### ##### ##### ##### ## #   #  ###   ####')
-    win.addstr(2, 2, '#     #       #     #      ##  # #   # #    ')
-    win.addstr(3, 2, ' ###  ####    #     #   ## # # # #      ### ')
-    win.addstr(4, 2, '    # #       #     #   ## #  ## #  ##     #')
-    win.addstr(5, 2, '####  #####   #     #   ## #   #  #### #### ')
-    win.attroff(curses.color_pair(2))
+    title = print_title_screen(screen, 'settings')
 
     title_string = "Use [ENTER] to select and the [ARROW] keys to navigate"
     title_string2 = "Press [ESC] to save and return to the main menu"
     title_string3 = "Press ['R'] at any time to revert to default settings"
-    y_pos = y//2 - len(settings_menu)//2 -5
+    y_pos = y//2 - len(settings_menu)//2 -6
     x_pos = x//2 - len(title_string)//2
     screen.addstr(y_pos, x_pos, title_string)
-    y_pos = y//2 - len(settings_menu)//2 -4
+    y_pos = y//2 - len(settings_menu)//2 -5
     x_pos = x//2 - len(title_string2)//2
     screen.addstr(y_pos, x_pos, title_string2)
-    y_pos = y//2 - len(settings_menu)//2 -3
+    y_pos = y//2 - len(settings_menu)//2 -4
     x_pos = x//2 - len(title_string3)//2
     screen.addstr(y_pos, x_pos, title_string3)
+    screen.addstr(y_pos+2, 85, 'current settings:')
+    screen.addstr(y_pos, 90, 'example')
     
     # handles the menu when no option is selected (browsing trough)
 
@@ -138,7 +160,7 @@ def print_settings_menu(screen, settings_menu_idx, settings_file=None, selected=
         current_setting = settings_file[list(settings_menu.keys())[settings_menu_idx]]
 
         for key, value in settings_menu.items():
-            key_to_print = key +': '
+            key_to_print = key +':'
             value_to_print = ''
             for i in range(len(value)-1):
                 value_to_print += value[i] + ' | '
@@ -149,7 +171,7 @@ def print_settings_menu(screen, settings_menu_idx, settings_file=None, selected=
             x_pos = x//2 - (len(key_to_print) + len(value_to_print))//2
             
             highlighted = value[settings_file[key]]
-            start = key_to_print
+            start = key_to_print + ' '
             end = ''
             ls = list(range(current_setting))
             le = list(range(current_setting+1, len(value)))
@@ -174,10 +196,11 @@ def print_settings_menu(screen, settings_menu_idx, settings_file=None, selected=
                     screen.addstr(y_pos, x_pos+len(start + highlighted), ' | ' + end + ' <--')
 
             else:
-                screen.addstr(y_pos, x_pos, key_to_print + value_to_print)
+                screen.addstr(y_pos, x_pos, key_to_print + ' ' + value_to_print)
+                
     
     screen.refresh()
-    win.refresh()
+    title.refresh()
 
 def print_High_Scores_menu(screen, i, highscore_file):
     screen.clear()
@@ -186,38 +209,41 @@ def print_High_Scores_menu(screen, i, highscore_file):
     screen.addstr(9, x//2-len('Press [ESC] at any time to return')//2, 'Press [ESC] at any time to return')
     y += 5
     title_length = len('#   # ##  ###  #   #   ####  ###   ###  ####  #####  ####')+4
-    x_main = x//2 - title_length//2
+    x_main = x//2 - (title_length-4)//2
 
-    win = curses.newwin(7, title_length, 1, x_main)
-    win.border()
-
-    win.attron(curses.color_pair(i))
-    win.addstr(1, 2, '#   # ##  ###  #   #   ####  ###   ###  ####  #####  ####')
-    win.addstr(2, 2, '#   #    #   # #   #  #     #   # #   # #   # #     #    ')
-    win.addstr(3, 2, '##### ## #     #####   ###  #     #   # # ##  ####   ### ')
-    win.addstr(4, 2, '#   # ## #  ## #   #      # #   # #   # #   # #         #')
-    win.addstr(5, 2, '#   # ##  ###  #   #  ####   ###   ###  #   # ##### #### ')
-    win.attroff(curses.color_pair(i))
+    title = print_title_screen(screen, 'highscores')
 
     y_table = y//2 - 6
     x_table = x_main
     table_rows = 17
-    table_col = title_length
+    table_col = title_length-1
     table = curses.newwin(table_rows, table_col, y_table, x_table)
     table.border()
 
-    x_pos = table_col//2 - len('|\/\/\/|')//2
-    table.addstr(2, x_pos, r'|\/\/\/|', curses.color_pair(i))
-    table.addstr(3, x_pos, r'|______|', curses.color_pair(i))
-    #table.addstr(4, table_col//2-len(highscore_file[1][0])//2, highscore_file[1][0] + ': ' + str(highscore_file[1][1]))
-    #TODO implement highscore.json or whatever
-    x_position = table_col//2-len(highscore_file[1][0] + ':')//2
+    # table.addstr(2, 14, r'|\/\/\/|', curses.color_pair(i))
+    # table.addstr(3, 14, r'|______|', curses.color_pair(i))
+    table.addstr(4, 6, '1')
+    table.addstr(4, 10, list(highscore_file.values())[0][0], curses.color_pair(i))
+    table.addstr(4, 40, str(list(highscore_file.values())[0][1]), curses.color_pair(i))
+    
+    x_position = 10 
     for i, l in enumerate(highscore_file.values()):
+        if i == 0:
+            continue
+        table.addstr(4+i, 6, str(i+1))
         table.addstr(4+i, x_position, l[0] + ': ')
-        table.addstr(4+i, x_position + 20, str(l[1]))
+        table.addstr(4+i, x_position + 30, str(l[1]))
+
+
+    # if score_pos < 11:
+    #     screen.addstr(9, x//2-len('Please enter your credentials and hit [ENTER]')//2, 'Please enter your credentials and hit [ENTER]')
+    #     table.addstr(4 + score_pos, x_position, ' '*30)
+    #     table.move(4 + score_pos, x_position)
+        
+        
 
     screen.refresh()
-    win.refresh()
+    title.refresh()
     table.refresh()
 
 
@@ -228,18 +254,7 @@ def print_game_screen(screen, left, right, hidden_word, score, lives, guesses, m
     
     y, x = screen.getmaxyx()
 
-    x_main = x//2 - len('#   #  ###  #   #  ###  #   #  ###  #   #')//2
-
-    win = curses.newwin(7, len('#   #  ###  #   #  ###  #   #  ###  #   #')+4, 1, x_main)
-    win.border()
-
-    win.attron(curses.color_pair(2))
-    win.addstr(1, 2, '#   #  ###  #   #  ###  #   #  ###  #   #')
-    win.addstr(2, 2, '#   # #   # ##  # #   # ## ## #   # ##  #')
-    win.addstr(3, 2, '##### ##### # # # #     # # # ##### # # #')
-    win.addstr(4, 2, '#   # #   # #  ## #  ## #   # #   # #  ##')
-    win.addstr(5, 2, '#   # #   # #   #  #### #   # #   # #   #')
-    win.attroff(curses.color_pair(2))
+    title = print_title_screen(screen, 'hangman')
 
     ly, lx = left.getmaxyx()
     left.border()
@@ -252,7 +267,8 @@ def print_game_screen(screen, left, right, hidden_word, score, lives, guesses, m
     ry, rx = right.getmaxyx()
     rx = rx//2-13//2
     right.border()
-    right.addstr(1, rx, f'total points: {score}')
+    right.addstr(1, 5, f'points: {score}')
+    right.addstr(1, 38, f'lives left: {lives}')
     right.addstr(3, rx, '_____________')
     right.addstr(4, rx, '\  ||     |  ')
     right.addstr(5, rx, ' \ ||        ')
@@ -300,11 +316,12 @@ def print_game_screen(screen, left, right, hidden_word, score, lives, guesses, m
     right.addstr(15, rx, f'{guessed_letters}')
 
     screen.refresh()
-    win.refresh()
+    title.refresh()
     left.refresh()
     right.refresh()
 
 def create_word(screen):
+    # LOOKS AT THE SETTINGS TO PICK THE CATEGORY
     with open('settings.json') as f:
         current_set = json.load(f)
 
@@ -313,10 +330,8 @@ def create_word(screen):
     word_list = words[choice]
     word = random.choice(word_list)
 
-    hidden_word = ''
-    for letter in word:
-        hidden_word += '_'
-
+    hidden_word = '_' * len(word)
+    # RETURNS BOTH THE WORD AND THE HIDDEN VERSION OF IT (i.e. 'horse', '_____')
     return word, hidden_word
 
 def reveal_hidden_word(screen, word, hidden, guess, guesses):
@@ -350,9 +365,12 @@ def sure(screen, prompt):
     screen.addstr(y_pos, x_pos, prompt)
     screen.refresh()
     while True:
-        choice = chr(screen.getch())
-        if choice in ['y', 'Y','n', 'N']:
-            return choice.lower()
+        choice = screen.getch()
+        try:
+            if chr(choice) in ['y', 'Y','n', 'N']:
+                return chr(choice).lower()
+        except ValueError:
+            pass
 
 def test_function(screen):
     y,x = screen.getmaxyx()
@@ -368,62 +386,121 @@ def test_function(screen):
 
             #screen.refresh()
 
-def lose_game_screen(screen, score, highscore_file):
+def find_score_position(screen, score, highscore_file):
+    # RETURNS THE POSITION IN THE HIGHSCORE LIST.
+    i = 1
+    for n, s in highscore_file.values():
+        if score > s:
+            return i
+        i += 1
+
+def end_game_screen(screen, score, highscore_file):
     got_highscore = False
     screen.clear()
     
+    score_pos = find_score_position(screen, score, highscore_file)
+    
     y, x = screen.getmaxyx()
 
-    x_main = x//2 - len('#   #  ###  #   #  ###  #   #  ###  #   #')//2
+    title = print_title_screen(screen, 'hangman')
+    title.refresh()
 
-    win = curses.newwin(7, len('#   #  ###  #   #  ###  #   #  ###  #   #')+4, 1, x_main)
-    win.border()
-
-    win.attron(curses.color_pair(2))
-    win.addstr(1, 2, '#   #  ###  #   #  ###  #   #  ###  #   #')
-    win.addstr(2, 2, '#   # #   # ##  # #   # ## ## #   # ##  #')
-    win.addstr(3, 2, '##### ##### # # # #     # # # ##### # # #')
-    win.addstr(4, 2, '#   # #   # #  ## #  ## #   # #   # #  ##')
-    win.addstr(5, 2, '#   # #   # #   #  #### #   # #   # #   #')
-    win.attroff(curses.color_pair(2))
-    win.refresh()
-
-    screen.addstr(y//2, x//2-len('You are out of lives, your final score was: xxx')//2, f'You are out of lives, your final score was: {score}')
+    screen.addstr(y//2, x//2-len('Your final score was: xxx')//2, f'Your final score was: {score}')
     screen.addstr(y//2+1, x//2-len("let's see if you ended up in the highscores!")//2, "let's see if you ended up in the highscores!")
     screen.refresh()
     for i in range(5):
         screen.addstr(y//2+2, x//2-len(".....")//2+i, ".")
-        curses.napms(800)
+        curses.napms(600)
         screen.refresh()
+        title.refresh()
         
-
-    if score > highscore_file[10][1]:
+    if score > highscore_file.get(10, ['NULL', 1])[1]:
         #TODO winscreen!
         screen.addstr(y//2+3, x//2-len("You made it!")//2, "You made it!")
-        got_highscore = True
+        screen.addstr(y//2+5, x//2-len("Please enter your credentials")//2, "Please enter your credentials")
+        screen.addstr(y//2+6, x//2-len("(Min: 3, Max: 15)")//2, "(Min: 3, Max: 15)")
+        screen.refresh()
+        title.refresh()
+        screen.move(y//2+8, x//2-7)
+        name = ''
+        chr_amount = 0
+        while True:
+            key = screen.getkey()
+            if key in string.ascii_letters:
+                name += key
+                chr_amount += 1
+            elif key in ['KEY_BACKSPACE', r'\b', r'\x7f'] or ord(key) == 8 and chr_amount > 0:
+                name = name[:len(name)-1]
+                chr_amount -= 1
+            screen.addstr(name)
+            screen.move(y//2+8, x//2-7)
+            if ord(key) == curses.KEY_ENTER or ord(key) in [10, 13]:
+                if choice := sure(screen, f'Are these your credentials?: {name} [Y/N]') == 'y':
+                    highscore_file[score_pos] = [name, score]
+                    with open('highscores.json', 'w') as f:
+                        json.dump(highscore_file, f)
+                    break
+                else:
+                    continue
+        
+        screen.clear()
+        screen.addstr(y//2+3, x//2-len("Saving")//2, "Saving")
+        screen.refresh()
+        for i in range(5):
+            screen.addstr(".")
+            curses.napms(200)
+            screen.refresh()
+        return highscore_file
     else:
         screen.addstr(y//2+3, x//2-len("Too bad, no highscore!")//2, "Too bad, no highscore!")
+        curses.napms(1000)
 
-    highscores = [s[1] for s in highscore_file.values()]
-
-    def find_position(score, highscores, idx=9):
-        if score < highscores[-1]:
-            return 10
-        if len(highscores) == 1 and score > highscores[-1]:
-            return 0
-        if score > highscores[idx]:
-            highscores.pop()
-            idx -= 1
-            return find_position(score, highscores, idx)
+    # highscores = [s[1] for s in highscore_file.values()]
 
     screen.refresh()
-    win.refresh()
-    return got_highscore
+    title.refresh()
+    curses.napms(500)
+    return highscore_file
+
+
+def how_to_play_menu(screen):
+    screen.clear()
+
+    y, x = screen.getmaxyx()
+
+    title = print_title_screen(screen, 'how to play')
+
+    screen.addstr(10, 10, "use [ARROW] keys to navigate menu's")
+
+    screen.addstr(12, 10, "use [ENTER] to advance to the selected menu")
+
+    screen.addstr(14, 10, "use [ESC] to return to a previous menu")
+
+    screen.addstr(16, 10, "otherwise, prompted keys can be used to advance	")
+
+    screen.addstr(10, 59, "||  while playing: pressing any alphabetical")
+    screen.addstr(11, 59, "||  key, will input this letter as your guess.")
+    screen.addstr(12, 59, "||  +1 point per right letter guessed")
+    screen.addstr(13, 59, "||")
+    screen.addstr(14, 59, "||  pressing [ENTER] at any time, allows you")
+    screen.addstr(15, 59, "||  to enter the entire word as a guess, ")
+    screen.addstr(16, 59, "||  points guessing this way are increased")
+    screen.addstr(17, 59, "||")
+    screen.addstr(18, 59, "||  while this pop-up window is open, press [ESC]")
+    screen.addstr(19, 59, "||  at any time to cancel your guess")
+    screen.addstr(20, 59, "||  or press [ENTER] again to confirm your guess")
+    screen.addstr(21, 59, "||  a missed guess in this way results in a")
+    screen.addstr(22, 59, "||  substraction of points")
+
+    screen.refresh()
+    title.refresh()
 
 '''
 main function to be used in the curses wrapper
 '''
 def main(screen):
+
+    # INITIALIZE COLORPAIRS, CURRENTLY NOT ALL IN USE
     curses.curs_set(0)
     curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_WHITE)
     curses.init_pair(2, curses.COLOR_WHITE, curses.COLOR_BLACK)
@@ -431,17 +508,29 @@ def main(screen):
     curses.init_pair(4, curses.COLOR_BLUE, curses.COLOR_BLACK)
     curses.init_pair(5, curses.COLOR_GREEN, curses.COLOR_BLACK)
 
+    # INITIALIZE WINDOWS TO BE USED LATER
     y, x = screen.getmaxyx()
     left_win = curses.newwin(y-12, (x-4)//2, 10, 2)
     right_win = curses.newwin(y-12, (x-4)//2, 10, x//2)
     popup_win = curses.newwin(7, (x-4)//2, 12, x//2-((x-4)//2)//2)
 
+    # SEARCH FOR THE HIGHSCORES/SETTINGS FILE LOCALLY, IF NOT FOUND TAKES THE DEFAULT.
     try:
-        with open('highscores.json' 'r') as f:
+        with open('highscores.json', 'r') as f:
             highscores_file = json.load(f)
+            print('Found highscores file on your system.\n')
     except FileNotFoundError:
         highscores_file = high_scores
+        print('highscores file was not found!\nStandard settings were used.')
 
+    try:
+        with open('settings.json', 'r') as f:
+            settings_file = json.load(f)
+    except FileNotFoundError:
+        settings_file = settings
+
+    # VARIABLES TO CONTROL MENUS
+    difficulty = settings_file['difficulty']
     main_menu_idx = 0
     main_menu_active = True
     settings_menu_idx = 0
@@ -451,10 +540,26 @@ def main(screen):
     curses.savetty()
     game_loop = False
     popup_active = False
+    skip_keypress = False
+    score_position = 11
 
+    # START OF PROGRAM LOOP
     while True:
-        print_main_menu(screen, main_menu_idx)
-        key = screen.getch()
+        # SKIP KEYPRESS IS TO IGNORE THE WAITING FOR A KEYPRESS WHEN REDIRECTED FROM ONE MENU TO ANOTHER DIRECTLY
+        # WITHOUT FIRST PASSING THE MAIN MENU
+        if not skip_keypress:
+            print_main_menu(screen, main_menu_idx)
+            key = screen.getch()
+        else:
+            key = -1
+        # SUBSECTION: CHECKS IF TERMINAL WAS RESIZED, IF SO 'CRASHES' THE GAME
+        curses.update_lines_cols()
+        if curses.LINES < 30 or curses.COLS < 116:
+            print('\n==================================================\n')
+            print('you terminal must be at least 30*116 (line/columns)')
+            print('please resize your terminal, and launch again')
+            print('\n==================================================\n')
+            break
         if key == curses.KEY_UP:
             main_menu_idx -= 1
             if main_menu_idx == -1:
@@ -463,6 +568,7 @@ def main(screen):
             main_menu_idx += 1
             if main_menu_idx == len(main_menu):
                 main_menu_idx = 0
+        # SELECTING THE OPTION IN MAIN MENU, SETTING THE RIGHT MENU'S ACTIVE
         elif key == curses.KEY_ENTER or key in [10, 13]:
             if main_menu[main_menu_idx] == 'Exit':
                 if choice := sure(screen, 'Are you sure you wish to Exit? [Y/N]') == 'y':
@@ -470,43 +576,53 @@ def main(screen):
             if main_menu[main_menu_idx] == 'Settings':
                 main_menu_active = False
                 settings_menu_active = True
-            if main_menu[main_menu_idx] == 'High Scores':
+            if main_menu[main_menu_idx] == 'Highscores':
                 main_menu_active = False
                 High_Scores_menu_active = True
             if main_menu[main_menu_idx] == 'Play':
-                lives = 3
+                lives_lib = {0:3, 1:2, 2:1}
+                lives = lives_lib[difficulty]
                 score = 0
+                score_position = 11
                 main_menu_active = False
                 game_loop = True
+            if main_menu[main_menu_idx] == 'How to play':
+                how_to_play_menu(screen)
+                k = screen.getch()
+                while k != 27:
+                    k = screen.getch()
 
-# check what menu is activated and go to that loop     
-        if main_menu_active:    
+# CHECK WHAT MENU IS ACTIVE GOING INTO IT'S LOOP     
+        if main_menu_active:   
+            skip_keypress = False 
             print_main_menu(screen, main_menu_idx)
         if High_Scores_menu_active:
             print_High_Scores_menu(screen, 2, highscores_file)
             curses.halfdelay(1)
             while High_Scores_menu_active:
-                key = screen.getch()
-                if key == 27:# ESCAPE
-                    # go back to main
-                    curses.resetty()
-                    High_Scores_menu_active = False
-                    main_menu_active = True
-                else:
-                    for i in range(2, 4):
-                        print_High_Scores_menu(screen, i, highscores_file)
-                        curses.delay_output(400)
-                        #curses.napms(400)
+                
+                for i in range(2, 4):
+                    print_High_Scores_menu(screen, i, highscores_file)
+                    curses.delay_output(400)
+
+                    key = screen.getch()
+                    if key == 27:# ESCAPE
+                        # GO BACK TO MAIN MENU
+                        curses.resetty()
+                        High_Scores_menu_active = False
+                        main_menu_active = True
+                        skip_keypress = True
+                        break
 
         if settings_menu_active:
+            skip_keypress = False
             print_settings_menu(screen, settings_menu_idx)
             while settings_menu_active:
                 key = screen.getch()
                 if key == 27:# ESCAPE
-                    # go back to main and save settings to file
+                    # GO BACK TO MAIN MENU AND SAVE SETTINGS TO FILE
                     settings_menu_active = False
                     main_menu_active = True
-                    #break
                 if key == curses.KEY_UP:
                     settings_menu_idx -= 1
                     if settings_menu_idx == -1:
@@ -521,21 +637,16 @@ def main(screen):
                             json.dump(settings, f)
                 elif key == curses.KEY_ENTER or key in [10, 13]:
                     selected = True
-                    #open the settings file, if it doesnt exist yet, uses standard settings.
-                    try:
-                        with open('settings.json', 'r') as f:
-                            settings_file = json.load(f)
-                    except FileNotFoundError:
-                        settings_file = settings
                     print_settings_menu(screen, settings_menu_idx, settings_file, selected)
                     current_option = settings_file[list(settings_menu.keys())[settings_menu_idx]]
                     while selected:
                         key = screen. getch()
                         if key == curses.KEY_ENTER or key in [10, 13]:
                             selected = False
-                            #write the users settings to file, so it can be read on another startup.
+                            # WRITE THE USERS SETTINGS TO FILE, SO IT CAN BE READ ON ANOTHER STARTUP.
                             with open('settings.json', 'w') as f:
                                 json.dump(settings_file, f)
+                            difficulty = settings_file['difficulty']
                         elif key == curses.KEY_LEFT:
                             current_option -= 1
                             if current_option < 0:
@@ -554,40 +665,48 @@ def main(screen):
                 print_settings_menu(screen, settings_menu_idx)
         while game_loop:
             if lives <= 0:
-                if have_highscore := lose_game_screen(screen, score, highscores_file):
-                    High_Scores_menu_active = True
-                    game_loop = False
-                    break
-                while lives <= 0:
-                    key = screen.getch()
-                    #TODO -- lose game screen, replay/quit option
-                    if key == 27:
-                        lives = 3
-                        game_loop = False
+                highscores_file = end_game_screen(screen, score, highscores_file)
+                High_Scores_menu_active = True
+                game_loop = False
+                skip_keypress = True
+                continue
+                
             word, hidden = create_word(screen)
             mistakes = 0
             guesses = []
             print_game_screen(screen, left_win, right_win, hidden, score, lives, guesses, mistakes)
             while word != hidden and lives > 0:
                 key = screen.getch()
-                #TODO -- implement how to play screen.
                 if key == 27:
-                    if choice := sure(screen, 'If you quit now, progress will be lost. Quit anyway? [Y/N]') == 'y':
+                    if choice := sure(screen, 'Are you sure you wish to quit? Your score will be lost. [Y/N]') == 'y':
                         main_menu_active = True
                         game_loop = False
+                        lives = 3
                         break
+                if key == 32:
+                    how_to_play_menu(screen)
+                    k = screen.getch()
+                    while k != 27:
+                        k = screen.getch()
+                    
+
                 if chr(key).lower() in hidden or chr(key).lower() in guesses:
                     continue
                 elif chr(key) in string.ascii_letters and chr(key).lower() in word:
-                    score += 1
+                    score += difficulty
                     hidden = reveal_hidden_word(screen, word, hidden, chr(key), guesses)
                     if word == hidden:
-                        if choice := sure(screen, 'FUUUUUUUUUCK YESSSSSSSSSS!! continue? [Y/N]') == 'y':
-                            break
-                        else:
-                            game_loop = False
-                            main_menu_active = True
-                            break
+                        print_game_screen(screen, left_win, right_win, hidden, score, lives, guesses, mistakes)
+                        left_win.addstr(11, 24, 'CORRECT!')
+                        left_win.refresh()
+                        curses.napms(500)
+                        continue
+                        #if choice := sure(screen, 'FUUUUUUUUUCK YESSSSSSSSSS!! continue? [Y/N]') == 'y':
+                        #    break
+                        #else:
+                        #    game_loop = False
+                        #    main_menu_active = True
+                        #    break
                 elif key == curses.KEY_ENTER or key in [10, 13]:
                     popup_active = True
                     #curses.halfdelay(1)
@@ -608,25 +727,35 @@ def main(screen):
                     while popup_active:
                         popup_win.refresh()
                         k = -1
-                        while l < len(hidden):
+                        while True:
                             k = popup_win.getch()
                             if k == 27:
                                 popup_active = False
                                 break
-                            try:
-                                popup_win.addstr(chr(k))
-                                l += 1
-                                full_guess += chr(k)
-                            except ValueError:
-                                pass
-                            if l == len(hidden):
+                            if chr(k) in string.ascii_letters and l < len(hidden):
+                                try:
+                                    popup_win.addstr(chr(k))
+                                    l += 1
+                                    full_guess += chr(k)
+                                except ValueError:
+                                    pass
+                            if k == curses.KEY_ENTER or k in [10, 13]:
                                 popup_active = False
                                 #curses.resetty()
                                 hidden = reveal_hidden_word(screen, word, hidden, full_guess, guesses)
                                 if hidden == word:
-                                    score += potential_points*3
+                                    score += potential_points*2*difficulty
+                                    popup_win.clear()
+                                    popup_win.border()
+                                    popup_win.addstr(3, pop_x//2-len('CORRECT!')//2, 'CORRECT!')
                                 else:
                                     score -= potential_points*2
+                                    popup_win.clear()
+                                    popup_win.border()
+                                    popup_win.addstr(3, pop_x//2-len('NOPE, WRONG!')//2, 'NOPE, WRONG!')
+                                popup_win.refresh()
+                                curses.napms(400)
+                                break
 
                 elif chr(key) in string.ascii_letters:
                     guesses.append(chr(key))
@@ -648,8 +777,8 @@ def main(screen):
                         
                 print_game_screen(screen, left_win, right_win, hidden, score, lives, guesses, mistakes)
 
-
-
+# AGRESSIVLY SET WINDOW SIZE FOR BEST EXPERIENCE THEN STARTS PROGRAM
+os.system('mode 116,30')
 curses.wrapper(main)
 
 
