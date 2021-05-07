@@ -8,7 +8,7 @@ import os
 Initializing menus and others
 '''
 main_menu = ['Play', 'Highscores', 'Settings', 'How to play', 'Exit']
-settings_menu = {'difficulty': ['easy', 'medium', 'hard'], 'screen flashing': ['ON', 'OFF'], 'word subjects': ['Animals', 'Foods', 'Brands']}
+settings_menu = {'difficulty': ['easy', 'medium', 'hard'], 'screen flashing': ['OFF', 'ON'], 'word subjects': ['Animals', 'Foods', 'Brands']}
 words = {'Animals':['horse', 'hippopotamus', 'crocodile'], 'Foods':['pancakes', 'lasagna', 'pizza', 'cake'], 'Brands':['peugeot', 'mercedes', 'kelloggs', 'apple']}
 
 settings = {
@@ -18,16 +18,16 @@ settings = {
     }
 
 high_scores = {
-    1:  ['PancakeFear', 10],
-    2:  ['rawrpie', 9],
-    3:  ['HazuHaku', 8],
-    4:  ['jan', 7],
-    5:  ['piet', 6],
-    6:  ['dirk', 5],
-    7:  ['greetje', 4],
-    8:  ['mark', 3],
-    9:  ['fleischmeister', 2],
-    10: ['computer-3', 1],
+    '1':  ['PancakeFear', 10],
+    '2':  ['rawrpie', 9],
+    '3':  ['HazuHaku', 8],
+    '4':  ['jan', 7],
+    '5':  ['piet', 6],
+    '6':  ['dirk', 5],
+    '7':  ['greetje', 4],
+    '8':  ['mark', 3],
+    '9':  ['fleischmeister', 2],
+    '10': ['computer-3', 1],
 }
 
 '''
@@ -108,7 +108,7 @@ def print_main_menu(screen, main_menu_idx):
 name says it, prints the settings menu to the screen.
 this also handles setting a selected option to the option of choice.
 '''
-def print_settings_menu(screen, settings_menu_idx, settings_file=None, selected=False):
+def print_settings_menu(screen, settings_menu_idx, settings_file, selected=False):
     screen.clear()
     
     y, x = screen.getmaxyx()
@@ -116,6 +116,7 @@ def print_settings_menu(screen, settings_menu_idx, settings_file=None, selected=
 
     title = print_title_screen(screen, 'settings')
 
+    # INITIAL PRINTS, ALLWAYS THE SAME
     title_string = "Use [ENTER] to select and the [ARROW] keys to navigate"
     title_string2 = "Press [ESC] to save and return to the main menu"
     title_string3 = "Press ['R'] at any time to revert to default settings"
@@ -129,21 +130,23 @@ def print_settings_menu(screen, settings_menu_idx, settings_file=None, selected=
     x_pos = x//2 - len(title_string3)//2
     screen.addstr(y_pos, x_pos, title_string3)
     screen.addstr(y_pos+2, 85, 'current settings:')
-    screen.addstr(y_pos, 90, 'example')
-    
-    # handles the menu when no option is selected (browsing trough)
 
-    if not selected:
-        for key, value in settings_menu.items():
-            key_to_print = key + ":"
-            value_to_print = ''
-            for i in range(len(value)-1):
-                value_to_print += value[i] + ' | '
-            value_to_print += value[-1]
-            idx = list(settings_menu).index(key)
-            y_pos = y//2 - len(settings_menu)//2 + idx
-            x_pos = x//2 - (len(key_to_print) + len(value_to_print))//2
-            
+    # PRINTING THE MENU ITEMS, ITERATING OVER THEM IS FOR HIGHLIGHTING
+    # THE PROPER WORDS WHEN BROWSING TROUGH THE MENU
+    for key, value in settings_menu.items():
+        key_to_print = key + ":"
+        value_to_print = ''
+        for i in range(len(value)-1):
+            value_to_print += value[i] + ' | '
+        value_to_print += value[-1]
+        idx = list(settings_menu).index(key)
+        y_pos = y//2 - len(settings_menu)//2 + idx
+        x_pos = x//2 - (len(key_to_print) + len(value_to_print))//2
+        highlighted = value[settings_file[key]]
+
+        screen.addstr(y_pos, 90, highlighted)
+    
+        if not selected:
             if idx == settings_menu_idx:
                 screen.addstr(y_pos,x_pos-4, '--> ')
                 screen.attron(curses.color_pair(1))
@@ -153,24 +156,10 @@ def print_settings_menu(screen, settings_menu_idx, settings_file=None, selected=
                 screen.addstr(y_pos, x_pos+len(' ' + key_to_print + value_to_print), ' <--')
             else:
                 screen.addstr(y_pos, x_pos, key_to_print + ' ' +  value_to_print)
-    
-    # handles the menu when an option is selected to change it.
+        
+        else:
+            current_setting = settings_file[list(settings_menu.keys())[settings_menu_idx]]
 
-    else:
-        current_setting = settings_file[list(settings_menu.keys())[settings_menu_idx]]
-
-        for key, value in settings_menu.items():
-            key_to_print = key +':'
-            value_to_print = ''
-            for i in range(len(value)-1):
-                value_to_print += value[i] + ' | '
-            value_to_print += value[-1]
-
-            idx = list(settings_menu).index(key)
-            y_pos = y//2 - len(settings_menu)//2 + idx
-            x_pos = x//2 - (len(key_to_print) + len(value_to_print))//2
-            
-            highlighted = value[settings_file[key]]
             start = key_to_print + ' '
             end = ''
             ls = list(range(current_setting))
@@ -198,7 +187,6 @@ def print_settings_menu(screen, settings_menu_idx, settings_file=None, selected=
             else:
                 screen.addstr(y_pos, x_pos, key_to_print + ' ' + value_to_print)
                 
-    
     screen.refresh()
     title.refresh()
 
@@ -220,8 +208,6 @@ def print_High_Scores_menu(screen, i, highscore_file):
     table = curses.newwin(table_rows, table_col, y_table, x_table)
     table.border()
 
-    # table.addstr(2, 14, r'|\/\/\/|', curses.color_pair(i))
-    # table.addstr(3, 14, r'|______|', curses.color_pair(i))
     table.addstr(4, 6, '1')
     table.addstr(4, 10, list(highscore_file.values())[0][0], curses.color_pair(i))
     table.addstr(4, 40, str(list(highscore_file.values())[0][1]), curses.color_pair(i))
@@ -233,14 +219,6 @@ def print_High_Scores_menu(screen, i, highscore_file):
         table.addstr(4+i, 6, str(i+1))
         table.addstr(4+i, x_position, l[0] + ': ')
         table.addstr(4+i, x_position + 30, str(l[1]))
-
-
-    # if score_pos < 11:
-    #     screen.addstr(9, x//2-len('Please enter your credentials and hit [ENTER]')//2, 'Please enter your credentials and hit [ENTER]')
-    #     table.addstr(4 + score_pos, x_position, ' '*30)
-    #     table.move(4 + score_pos, x_position)
-        
-        
 
     screen.refresh()
     title.refresh()
@@ -348,7 +326,6 @@ def reveal_hidden_word(screen, word, hidden, guess, guesses):
     return hidden
 
 
-
 '''
 A promt to ask the user if they are sure, made into its own function for reusability
 returns a simple "y" or "n".
@@ -371,20 +348,6 @@ def sure(screen, prompt):
                 return chr(choice).lower()
         except ValueError:
             pass
-
-def test_function(screen):
-    y,x = screen.getmaxyx()
-
-    curses.halfdelay(5)
-    while True:
-        key = screen.getch()
-        if key == curses.KEY_ENTER or key in [10, 13]:
-            break
-        for i in range(5):
-            screen.addstr(5, 5, 'Hallo', curses.color_pair(i))
-            curses.napms(250)
-
-            #screen.refresh()
 
 def find_score_position(screen, score, highscore_file):
     # RETURNS THE POSITION IN THE HIGHSCORE LIST.
@@ -426,19 +389,21 @@ def end_game_screen(screen, score, highscore_file):
         chr_amount = 0
         while True:
             key = screen.getkey()
-            if key in string.ascii_letters:
+            if key in string.ascii_letters and chr_amount < 15:
                 name += key
                 chr_amount += 1
             elif key in ['KEY_BACKSPACE', r'\b', r'\x7f'] or ord(key) == 8 and chr_amount > 0:
+                screen.addstr(' '*15)
+                screen.move(y//2+8, x//2-7)
                 name = name[:len(name)-1]
                 chr_amount -= 1
             screen.addstr(name)
             screen.move(y//2+8, x//2-7)
             if ord(key) == curses.KEY_ENTER or ord(key) in [10, 13]:
                 if choice := sure(screen, f'Are these your credentials?: {name} [Y/N]') == 'y':
-                    highscore_file[score_pos] = [name, score]
-                    with open('highscores.json', 'w') as f:
-                        json.dump(highscore_file, f)
+                    #highscore_file[score_pos] = [name, score]
+                    #with open('highscores.json', 'w') as f:
+                    #    json.dump(highscore_file, f)
                     break
                 else:
                     continue
@@ -450,7 +415,7 @@ def end_game_screen(screen, score, highscore_file):
             screen.addstr(".")
             curses.napms(200)
             screen.refresh()
-        return highscore_file
+        return name
     else:
         screen.addstr(y//2+3, x//2-len("Too bad, no highscore!")//2, "Too bad, no highscore!")
         curses.napms(1000)
@@ -460,7 +425,7 @@ def end_game_screen(screen, score, highscore_file):
     screen.refresh()
     title.refresh()
     curses.napms(500)
-    return highscore_file
+    return None
 
 
 def how_to_play_menu(screen):
@@ -494,6 +459,20 @@ def how_to_play_menu(screen):
 
     screen.refresh()
     title.refresh()
+
+def input_score(screen, name, score, score_position, highscore_file):
+    new_highscore_file = {}
+    for place, value in highscore_file.items():
+        place = int(place)
+        if place < score_position:
+            new_highscore_file[place] = value
+        elif place == score_position:
+            new_highscore_file[place] = [name, score]
+        else:
+            new_highscore_file[place] = highscore_file[str(place-1)]
+
+    return new_highscore_file
+
 
 '''
 main function to be used in the curses wrapper
@@ -616,7 +595,7 @@ def main(screen):
 
         if settings_menu_active:
             skip_keypress = False
-            print_settings_menu(screen, settings_menu_idx)
+            print_settings_menu(screen, settings_menu_idx, settings_file)
             while settings_menu_active:
                 key = screen.getch()
                 if key == 27:# ESCAPE
@@ -662,10 +641,12 @@ def main(screen):
                                 current_option = 0
                             settings_file[list(settings_menu.keys())[settings_menu_idx]] = current_option
                         print_settings_menu(screen, settings_menu_idx, settings_file, selected)
-                print_settings_menu(screen, settings_menu_idx)
+                print_settings_menu(screen, settings_menu_idx, settings_file)
         while game_loop:
             if lives <= 0:
-                highscores_file = end_game_screen(screen, score, highscores_file)
+                name = end_game_screen(screen, score, highscores_file)
+                pos = find_score_position(screen, score, highscores_file)
+                highscores_file = input_score(screen, name, score, pos, highscores_file)
                 High_Scores_menu_active = True
                 game_loop = False
                 skip_keypress = True
@@ -701,17 +682,9 @@ def main(screen):
                         left_win.refresh()
                         curses.napms(500)
                         continue
-                        #if choice := sure(screen, 'FUUUUUUUUUCK YESSSSSSSSSS!! continue? [Y/N]') == 'y':
-                        #    break
-                        #else:
-                        #    game_loop = False
-                        #    main_menu_active = True
-                        #    break
+                        
                 elif key == curses.KEY_ENTER or key in [10, 13]:
                     popup_active = True
-                    #curses.halfdelay(1)
-                    #curses.echo()
-                    #curses.cbreak()
                     potential_points = 0
                     for l in hidden:
                         if l not in string.ascii_letters:
@@ -763,7 +736,8 @@ def main(screen):
                     mistakes += 1
                     if mistakes >= 6:
                         hidden = word
-                        curses.flash()
+                        if settings_file['screen flashing']:
+                            curses.flash()
                         lives -= 1
                         print_game_screen(screen, left_win, right_win, hidden, score, lives, guesses, mistakes)
                         k = 0
@@ -780,5 +754,3 @@ def main(screen):
 # AGRESSIVLY SET WINDOW SIZE FOR BEST EXPERIENCE THEN STARTS PROGRAM
 os.system('mode 116,30')
 curses.wrapper(main)
-
-
