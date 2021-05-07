@@ -20,3 +20,4 @@ then run the script typing: 'python hangman.py' and hitting [ENTER]
 
 You should see the main menu and be able to navigate now.
 
+./Hangman.jpg
